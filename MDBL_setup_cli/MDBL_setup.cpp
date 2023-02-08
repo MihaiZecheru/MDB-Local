@@ -55,9 +55,8 @@ inline bool alphanumeric(const std::string &str)
 std::string encrypt(std::string &str)
 {
 	std::string encrypted = "";
-	std::srand(std::time(nullptr));
 	int max = 62;
-	int min = 33;
+	int min = 35;
 
 	// Beginning sequence
 	for (int i = 0; i < 23; i++)
@@ -65,12 +64,12 @@ std::string encrypt(std::string &str)
 
 	for (int i = 0; i < str.length(); i++)
 	{
-		if (str[i] + 7 == 127) str[i]--;
-		encrypted += (str[i] + 7);
+		if (str[i] + 7 == 127) encrypted += char(33); // !
+		else if (str[i] + 7 == 129) encrypted += char(34); // ""
+		else encrypted += (str[i] + 7);
 	}
 
 	// Ending sequence
-	std::srand(std::time(nullptr));
 	for (int i = 0; i < 23; i++)
 		encrypted += char(std::rand() % (max - min + 1) + min);
 
@@ -79,6 +78,8 @@ std::string encrypt(std::string &str)
 
 int main(const int argc, const char** argv)
 {
+	std::srand(std::time(0));
+
 	std::string path;
 	std::string database_name;
 	std::string username;
