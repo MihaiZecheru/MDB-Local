@@ -16,14 +16,53 @@
  * - phone: a phone number of up to 20 characters
  * - array: an array
  * - json: a JSON object
- * - emoji: an emoji code, for example, :smile:, which is a string of up to 58 characters
  */
-export type fieldtype = "string" | "string_max" | "string_nolim" | `string_${number}` | "integer" | "float" | "boolean" | "date" | "time" | "datetime" | "url" | "email" | "phone" | "array" | "json" | "emoji";
+export type fieldtype = "string" | "string_max" | "string_nolim" | `string_${number}` | "integer" | "float" | "boolean" | "date" | "time" | "datetime" | "url" | "email" | "phone" | "array" | "json";
 export type fieldname = string;
+export const MAX_STRING_LENGTH = 10485760;
 
 export default class Field {
   public constructor(public name: fieldname, public type: fieldtype, public isNullable: boolean, public defaultValue: any, public isAutoIncrement: boolean) {}
   
+  public validate(value: any): boolean {
+    if (value === undefined) return this.isNullable;
+
+    switch (this.type) {
+      case "string":
+        return typeof value === "string" && value.length <= 255;
+      case "string_max":
+        return typeof value === "string" && value.length <= MAX_STRING_LENGTH; // 100k
+      case "string_nolim":
+        return typeof value === "string";
+      case "integer":
+        return typeof value === "number" && Number.isInteger(value);
+      case "float":
+        return typeof value === "number" && !Number.isInteger(value);
+      case "boolean":
+        return typeof value === "boolean";
+      case "date":
+        return typeof value === "string" && value.match(/^\d{4}-\d{2}-\d{2}$/) !== null;
+      case "time":
+        return typeof value === "string" && value.match(/^\d{2}:\d{2}:\d{2}$/) !== null;
+      case "datetime":
+        return typeof value === "string" && value.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/) !== null;
+      case "url":
+        return typeof value === "string" && value.match(/^https?:\/\/.+/) !== null;
+      case "email":
+        return typeof value === "string" && value.match(/^.+@.+\..+$/) !== null;
+      case "phone":
+        return typeof value === "string" && value.match(/^\+?\d+$/) !== null;
+      case "array":
+        return Array.isArray(value);
+      case "json":
+        return typeof value === "object";
+      default:
+        if (this.type.match(/^string_\d+$/) !== null)
+          return typeof value === "string" && value.length <= parseInt(this.type.split("_")[1]);
+        return false;
+    }
+  }
+
   public static fromJSON(json: any): Field {
     return new Field(json.name, json.type, json.isNullable, json.defaultValue, json.isAutoIncrement);
   }

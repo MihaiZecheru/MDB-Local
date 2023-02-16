@@ -19,10 +19,18 @@ export class Schema {
     return this.fields.find((f: Field) => f.name === name);
   }
 
+  public validate(entry: any): boolean {
+    return this.fields.every((f: Field) => f.validate(entry[f.name]));
+  }
+
   public toJSON(): any {
-    return {
-      // @ts-ignore
-      ...this.fields.map((f: Field) => { let d: object = {}; d[f.name] = f.toJSON(); return d })
-    };
+    let d = {};
+    // @ts-ignore
+    this.fields.forEach((f: Field) => d[f.name] = f.toJSON());
+    return d;
+  }
+
+  public toCSV(): string {
+    return this.fields.reduce((acc, f: Field) => { return acc + `${f.name},${f.type},${f.isNullable},${f.defaultValue},${f.isAutoIncrement}\n` }, "name,type,isNullable,defaultValue,isAutoIncrement\n");
   }
 }
