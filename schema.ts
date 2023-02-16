@@ -18,4 +18,11 @@ export class Schema {
   public getField(name: string): Field | undefined {
     return this.fields.find((f: Field) => f.name === name);
   }
+
+  public toJSON(): any {
+    return {
+      // @ts-ignore
+      ...this.fields.map((f: Field) => { let d: object = {}; d[f.name] = f.toJSON(); return d })
+    };
+  }
 }
