@@ -1,3 +1,0 @@
-name,type,isNullable,defaultValue
-name,string,false,false
-age,integer,false,false

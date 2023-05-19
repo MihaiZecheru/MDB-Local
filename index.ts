@@ -1,132 +1,651 @@
-import fs from 'fs';
-import { parse } from 'csv-parse/sync';
-import { Table } from './table';
-import { Schema } from './schema';
-import Field from './field';
+const fs = require('fs');
 
-require('dotenv').config();
+/**
+ * The name of a field in an entry/table
+ */
+type fieldname = string;
 
-class Database {
-  private tables_path: string = "";
-  private tablesmap: string = "";
-  private tables: Array<Table> = new Array<Table>();
-  private initialized: boolean = false;
+/**
+ * The value of a field in an entry/table - a string that may represent numbers, booleans, etc.
+ * The user parses the values himself based on what he knows has been stored in that field
+ */
+type fieldvalue = string;
+
+/**
+ * The id of a table entry
+ */
+type entryid = number;
+
+/**
+ * Table entry type
+ */
+type TEntry = Record<fieldname, fieldvalue>;
+
+/**
+ * Raw JSON table type
+ */
+interface ITable {
+  name: string;
+  folder: string;
+  fieldnames: Array<fieldname>;
+}
+
+/**
+ * Database Table
+ */
+class Table implements ITable {
+  /**
+   * The separator used to separate fields in an entry
+   */
+  static ENTRY_SEP: string = "{<@SEP>}"; 
   
-  public constructor(private readonly path: string, private readonly username: string, private readonly password: string) {}
+  /**
+   * The name of the table
+   */
+  name: string;
 
-  public async connect(): Promise<void> {
-    // Check if the database exists
-    if (!fs.existsSync(this.path)) {
-      console.error('Database does not exist at ' + this.path + "\nUse MDBL_setup.exe to create a new database");
-      return;
+  /**
+   * The path to the folder where the table's entries are stored
+   */
+  folder: string;
+
+  /**
+   * The names of the fields in the table / in the table's entries
+   */
+  fieldnames: Array<fieldname>;
+
+  /**
+   * Create a table from a raw json table stored in the table.info file
+   * @param raw_table The raw json table from the table.info file
+   */
+  constructor(raw_table: ITable) {
+    this.name = raw_table.name;
+    this.folder = `./database/${raw_table.name}/`;
+    this.fieldnames = raw_table.fieldnames;
+  }
+
+  /**
+   * Get the filepath of the entry with the given id
+   * @param id The id of the entry to get the filepath of
+   * @returns The filepath of the entry with the given id
+   */
+  public entry_path(id: entryid): string {
+    return this.folder + id;
+  }
+
+  /**
+   * Get the next available id
+   * @returns The next available id
+   */
+  private get_next_id(): entryid {
+    const ids = fs.readdirSync(this.folder);
+    if (!ids.length) return 1;
+    return Math.max(...ids) + 1;
+  }
+
+  /**
+   * Get all existing entry ids
+   * @returns Every existing entryid
+   */
+  private get_all_ids(): Array<entryid> {
+    return fs.readdirSync(this.folder).map((id: string) => parseInt(id));
+  }
+
+  /**
+   * Write entry data to file
+   * @param id The id of the entry to write to file
+   * @param data The data to write to file
+   * @throws Error if a field is missing in data or if there are too many fields in data
+   */
+  private write_to_file(id: entryid, data: TEntry): void {
+    let stringified_data = "";
+    for (const fieldname of this.fieldnames) {
+      const value = data[fieldname];
+      if (!value) throw new Error(`Field '${fieldname}' is missing in data`);
+      stringified_data += `${Table.ENTRY_SEP}${value}${Table.ENTRY_SEP}\n`;
     }
 
-    // Get internal username and password
-    const auth_path = fs.readFileSync(this.path).toString();
-    const encrypted_username = fs.readFileSync(auth_path + '/username').toString();
-    const encrypted_password = fs.readFileSync(auth_path + '/password').toString();
+    if (Object.keys(data).length > this.fieldnames.length) throw new Error(`Too many fields in data`);
+    fs.writeFileSync(this.entry_path(id), stringified_data.substring(0, stringified_data.length - 1), { encoding: 'utf8', flag: 'w' });
+  }
+
+  /**
+   * Get an entry
+   * @param id The id of the entry to get
+   * @returns The entry with the given id if it exists, otherwise null
+   */
+  public get(id: entryid): TEntry | null {
+    if (!fs.existsSync(this.entry_path(id))) return null;
+
+    const raw_entry = fs.readFileSync(this.entry_path(id), { encoding: 'utf8', flag: 'r' });
+    const entries = raw_entry.match(new RegExp(`${Table.ENTRY_SEP}(.*?)${Table.ENTRY_SEP}`, 'g')).map((match: string) => match.substring(Table.ENTRY_SEP.length, match.length - Table.ENTRY_SEP.length));
     
-    const db_username = await fetch("https://us-west2-mihai-db-369607.cloudfunctions.net/Decrypt", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encrypted: encrypted_username })
-    }).then((r: any) => r.text());
-
-    const db_password = await fetch("https://us-west2-mihai-db-369607.cloudfunctions.net/Decrypt", {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ encrypted: encrypted_password })
-    }).then((r: any) => r.text());
-
-    // Attempt login
-    if (this.username !== db_username || this.password !== db_password) {
-      console.error('Invalid username or password'); return;
-    } else {
-      console.log(`Successfully logged in to '${this.path}' as '${this.username}'`);
+    let record: TEntry = {};
+    for (let i = 0; i < this.fieldnames.length; i++) {
+      record[this.fieldnames[i]] = entries[i];
     }
 
-    this.tables_path = auth_path.substring(0, auth_path.length - 4) + 'tables';
-    this.tablesmap = this.tables_path + '.map';
+    return record;
+  }
 
-    // Load tables
-    /* tablemap var will look like this
-      [
-        [
-          'test',
-          'Z:\\main\\programming\\js\\other\\mdb_local\\Example-DB\\tables\\test\\.schema'
-        ]
-      ]
-    */
-    this.assertMapFile();
-    const tablemap: Array<Array<string>> = fs.readFileSync(this.tablesmap).toString().split('\n').filter((line: string) => line !== "").map((line: string) => line.split('='));
+  /**
+   * Create a new entry
+   * @param data The entry's data
+   * @returns The created entry
+   */
+  public post(data: TEntry): TEntry {
+    const id = this.get_next_id();
+    this.write_to_file(id, data);
+    return data;
+  }
+  
+  /**
+   * Update an entry
+   * @param id The id of the entry to update
+   * @param updated_fields Record containing the fields to update
+   * @returns The updated entry
+   * @throws Error if the entry does not exist
+   */
+  public patch(id: entryid, updated_fields: TEntry): TEntry {
+    const current_data = this.get(id);
+    const updated_data = { ...current_data, ...updated_fields };
+    if (!fs.existsSync(this.entry_path(id))) throw new Error(`Entry with id '${id}' does not exist`);
+    this.write_to_file(id, updated_data);
+    return updated_data;
+  }
 
-    tablemap.forEach((table: Array<string>) => {
-      const schema_path = table[1];
-      const data = parse(fs.readFileSync(schema_path), {columns: true});
-      this.tables.push(new Table(table[0], new Schema(...data.map((field: any) => new Field(field.name, field.type, field.isNullable, field.defaultValue, field.isAutoIncrement))), this.tables_path + '\\' + table[0]));
+  /**
+   * Delete an entry
+   * @param id The id of the entry to delete
+   * @throws Error if the entry does not exist
+   */
+  public delete(id: entryid): TEntry {
+    const entry: TEntry = this.get(id)!;
+    if (!entry) throw new Error(`Entry with id ${id} does not exist`);
+    fs.unlinkSync(this.entry_path(id));
+    return entry;
+  }
+
+  // *** FILTER-QUERY GET METHODS *** ///
+/**
+ * Get all entries in the table
+ * @returns Every entry in the table
+ */
+  public get_all(): Array<TEntry> {
+    return fs.readdirSync(this.folder).map((id: string) => this.get(parseInt(id)));
+  }
+
+  /**
+   * Get all entries where the field with the given name is equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name is equal to the given value
+   */
+  public get_where(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname] === value);
+  }
+
+  /**
+   * Get all entries where the field with the given name is not equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name is not equal to the given value
+   */
+  public get_where_not(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname] !== value);
+  }
+
+  /**
+   * Get all entries where the field with the given name is greater than the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name is greater than the given value
+   */
+  public get_where_gt(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname] > value);
+  }
+
+  /**
+   * Get all entries where the field with the given name is less than the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name is less than the given value
+   */
+  public get_where_lt(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname] < value);
+  }
+
+  /**
+   * Get all entries where the field with the given name is greater than or equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name is greater than or equal to the given value
+   */
+  public get_where_gte(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname] >= value);
+  }
+
+  /**
+   * Get all entries where the field with the given name is less than or equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name is less than or equal to the given value
+   */
+  public get_where_lte(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname] <= value);
+  }
+
+  /**
+   * Get all entries where the field with the given name contains the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name contains the given value
+   */
+  public get_where_contains(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname].includes(value));
+  }
+
+  /**
+   * Get all entries where the field with the given name does not contain the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name does not contain the given value
+   */
+  public get_where_not_contains(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => !entry[fieldname].includes(value));
+  }
+
+  /**
+   * Get all entries where the field with the given name starts with the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name starts with the given value
+   */
+  public get_where_starts_with(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname].startsWith(value));
+  }
+
+  /**
+   * Get all entries where the field with the given name ends with the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries where the field with the given name ends with the given value
+   */
+  public get_where_ends_with(fieldname: fieldname, value: string): Array<TEntry> {
+    return this.get_all().filter((entry: TEntry) => entry[fieldname].endsWith(value));
+  }
+
+  // *** FILTER-QUERY PATCH METHODS *** ///
+
+  /**
+   * Update all entries in the table with the values in updated_fields
+   * @param updated_fields The fields to update
+   * @warning be careful using this method
+   */
+  public patch_all(updated_fields: TEntry): void {
+    this.get_all_ids().map((id: entryid) => this.patch(id, updated_fields));
+  }
+
+  /**
+   * Update all entries in the table with the values in updated_fields where the field with the given name is equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] === value) this.patch(id, updated_fields);
     });
-
-    this.initialized = true;
   }
 
-  private notInitialized(): boolean {
-    if (!this.initialized) {
-      console.error('Database not initialized'); return true;
-    } else return false;
+  /**
+   * Get all entries where the field with the given name is not equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_not(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] !== value) this.patch(id, updated_fields);
+    });
   }
 
-  private assertMapFile(): void {
-    if (!fs.existsSync(this.tablesmap))
-      fs.closeSync(fs.openSync(this.tablesmap, 'w'));
+  /**
+   * Get all entries where the field with the given name is greater than the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_gt(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] > value) this.patch(id, updated_fields);
+    });
   }
 
-  public createTable(name: string, schema: Schema): Table | undefined {
-    if (this.notInitialized()) return;
+  /**
+   * Get all entries where the field with the given name is less than the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_lt(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] < value) this.patch(id, updated_fields);
+    });
+  }
 
-    if (/[^\w\-_]+/.test(name)) {
-      console.error('Table name must be alphanumeric'); return;
-    }
+  /**
+   * Get all entries where the field with the given name is greater than or equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_gte(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] >= value) this.patch(id, updated_fields);
+    });
+  }
+
+  /**
+   * Get all entries where the field with the given name is less than or equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_lte(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] <= value) this.patch(id, updated_fields);
+    });
+  }
+
+  /**
+   * Get all entries where the field with the given name contains the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_contains(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname].includes(value)) this.patch(id, updated_fields);
+    }); 
+  }
+
+  /**
+   * Get all entries where the field with the given name does not contain the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_not_contains(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (!this.get(id)![fieldname].includes(value)) this.patch(id, updated_fields);
+    });
+  }
+
+  /**
+   * Get all entries where the field with the given name starts with the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_starts_with(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname].startsWith(value)) this.patch(id, updated_fields);
+    });
+  }
+
+  /**
+   * Get all entries where the field with the given name ends with the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   */
+  public patch_where_ends_with(fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname].endsWith(value)) this.patch(id, updated_fields);
+    });
+  }
+
+  // *** FILTER-QUERY DELETE METHODS *** ///
+
+  /**
+   * Delete all entries
+   * @warning be careful using this method
+   */
+  public delete_all(): void {
+    this.get_all_ids().forEach((id: entryid) => this.delete(id));
+  }
+
+  /**
+   * Delete all entries where the field with the given name is equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] === value) this.delete(id);
+    }); 
+  }
+
+  /**
+   * Delete all entries where the field with the given name is not equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_not(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] !== value) this.delete(id);
+    });
+  }
+
+  /**
+   * Delete all entries where the field with the given name is greater than the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_gt(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] > value) this.delete(id);
+    });
+  }
+
+  /**
+   * Delete all entries where the field with the given name is less than the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_lt(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] < value) this.delete(id);
+    });
+  }
+
+  /**
+   * Delete all entries where the field with the given name is greater than or equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_gte(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] >= value) this.delete(id);
+    });
+  }
+
+  /**
+   * Delete all entries where the field with the given name is less than or equal to the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_lte(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname] <= value) this.delete(id);
+    });
+  }
+
+  /**
+   * Delete all entries where the field with the given name contains the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_contains(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname].includes(value)) this.delete(id);
+    });
+  }
+
+  /**
+   * Delete all entries where the field with the given name does not contain the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_not_contains(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (!this.get(id)![fieldname].includes(value)) this.delete(id);
+    });
+  }
+
+  /**
+   * Delete all entries where the field with the given name starts with the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_starts_with(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname].startsWith(value)) this.delete(id);
+    });
+  }
+
+  /**
+   * Delete all entries where the field with the given name ends with the given value
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   */
+  public delete_where_ends_with(fieldname: fieldname, value: string): void {
+    this.get_all_ids().forEach((id: entryid) => {
+      if (this.get(id)![fieldname].endsWith(value)) this.delete(id);
+    });
+  }
+}
+
+/**
+ * Static Database class for interacting with the MDBL database
+ */
+class Database {
+  /**
+   * The path to the database root folder
+   */
+  private static database_folder: string = "./database/";
+  
+  /**
+   * The path to the table.info file
+   */
+  private static tables_info_file: string = this.database_folder + "table.info";
+  
+  /**
+   * The tables in the database
+   */
+  private static tables: Array<Table> = [];
+
+  /**
+   * Connected status
+   */
+  private static connected: boolean = false;
+
+  /**
+   * Connect to the database and
+   * create the neccessary files if they do not exist and
+   * create existing tables from the table information in the file
+   * @throws Error if the database is already connected
+   */
+  public static connect(): void {
+    if (this.connected) throw new Error("Database already connected");
     
-    this.assertMapFile();
-    let table_path, schema_path, tablemap_path;
-
-    try {
-      table_path = this.tables_path + '\\' + name;
-      fs.mkdirSync(table_path);
-
-      schema_path = table_path + '\\.schema';
-      fs.writeFileSync(schema_path, schema.toCSV());
-    } catch (e) {
-      console.error('Table already exists'); return;
+    if (!fs.existsSync(this.database_folder)) {
+      fs.mkdir(this.database_folder);
     }
 
-    // Add to map
-    const tablemap = fs.readFileSync(this.tablesmap).toString();
-    fs.writeFileSync(this.tablesmap, tablemap + `${name}=${schema_path}\n`);
+    if (fs.existsSync(this.tables_info_file)) {
+      this.tables = fs.readFileSync(this.tables_info_file, { encoding: 'utf8', flag: 'r' }).split("\r\n").filter((line: string) => line.length != 0).map((line: string) => new Table(JSON.parse(line)));
+    }
 
-    const table = new Table(name, schema, table_path);
-    this.tables.push(table);
+    this.connected = true;
+  }
+
+  /**
+   * Get an existing table from the database
+   * @param tablename The name of the table to get
+   * @returns The table with the given tablename
+   * @throws Error if the table does not exist
+   */
+  public static get_table(tablename: string): Table {
+    const table = this.tables.find((table: Table) => table.name == tablename);
+    if (!table) throw new Error(`Table ${tablename} does not exist`);
     return table;
   }
 
-  public getTable(name: string): Table | undefined {
-    return this.tables.find((t: Table) => t.name === name);
+  /**
+   * Get an entry with the given id from the table with the given tablename
+   * @param tablename The name of the table to get the entry from
+   * @param id The id of the entry to get
+   * @returns The entry with the given id if it exists, otherwise null
+   */
+  public static get(tablename: string, id: entryid): TEntry | null {
+    const table = this.get_table(tablename);
+    return table.get(id);
+  }
+
+  /**
+   * Create a new entry in the table with the given tablename
+   * @param tablename The name of the table to create the entry in
+   * @param data The entry data
+   */
+  public static post(tablename: string, data: TEntry): void {
+    const table = this.get_table(tablename);
+    table.post(data);
+  }
+
+  /**
+   * Update the entry with the given id in the table with the given tablename
+   * @param tablename The name of the table to update the entry in
+   * @param id The id of the entry to update
+   * @param updated_fields The fields to update
+   */
+  public static patch(tablename: string, id: entryid, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch(id, updated_fields);
+  }
+
+  /**
+   * Delete the entry with the given id from the table with the given tablename
+   * @param tablename The name of the table to delete the entry from
+   * @param id The id of the entry to delete
+   */
+  public static delete(tablename: string, id: entryid): void {
+    const table = this.get_table(tablename);
+    table.delete(id);
+  }
+
+  /// *** FILTER-QUERY METHODS *** ///
+
+  // TODO: add documentation and add all the methods from the Table class to this class
+  public static get_all(tablename: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_all();
   }
 }
 
-function main() {
-  // db.createTable('test', new Schema(
-  //   new Field('id', 'integer', false, true, true),
-  //   new Field('name', 'string', false, false, false),
-  //   new Field('age', 'integer', false, false, false)
-  // ));
+const record: TEntry = {
+  hello: "tampoco",
+  world: "yo soy"
+};
 
-  const t = db.getTable('test') as Table;
-  // t.createEntry({ name: 'Mihai', age: 15 });
-  // const entry = t.getEntry(1); // First entry, file '1'
-  const entry = t.searchEntries((entry: any) => entry.name === 'Mihai');
-  console.log("entry", entry);
-}
+Database.connect();
+const t = Database.get_table('test');
 
-const db = new Database(<string>process.env.DB_PATH, <string>process.env.DB_USERNAME, <string>process.env.DB_PASSWORD);
-db.connect().then(main);
+console.log(t.get(1));
+console.log("-------------------------------------------------------------------");
+console.log(t.get(1));
+console.log("-------------------------------------------------------------------");
+console.log(t.get_all());
+console.log("-------------------------------------------------------------------");
+console.log(t.get_where("hello", "hola"));
