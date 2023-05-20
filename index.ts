@@ -917,7 +917,138 @@ class Database {
     table.patch_where_ends_with(fieldname, value, updated_fields);
   }
 
-  
+  /// *** FILTER-QUERY DELETE METHODS *** ///
+
+  /**
+   * Delete all entries from the table with the given tablename
+   * @param tablename The name of the table to delete the entries from
+   * @warning be careful using this method 
+   * @throws Error if the table does not exist
+   */
+  public static delete_all(tablename: string): void {
+    const table = this.get_table(tablename);
+    table.delete_all();
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name is equal to the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name is not equal to the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_not(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_not(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name is greater than the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_gt(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_gt(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name is greater than or equal to the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_gte(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_gte(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name is less than the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_lt(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_lt(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name is less than or equal to the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_lte(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_lte(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name contains the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_contains(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_contains(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name does not contain the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_not_contains(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_not_contains(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name starts with the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_starts_with(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_starts_with(fieldname, value);
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename where the field with the given name ends with the given value
+   * @param tablename The name of the table to delete the entries from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @throws Error if the table does not exist
+   */
+  public static delete_where_ends_with(tablename: string, fieldname: fieldname, value: string): void {
+    const table = this.get_table(tablename);
+    table.delete_where_ends_with(fieldname, value);
+  }
 }
 
 // const record: TEntry = {
