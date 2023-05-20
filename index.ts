@@ -167,10 +167,11 @@ class Table implements ITable {
   }
 
   // *** FILTER-QUERY GET METHODS *** ///
-/**
- * Get all entries in the table
- * @returns Every entry in the table
- */
+
+  /**
+   * Get all entries in the table
+   * @returns Every entry in the table
+   */
   public get_all(): Array<TEntry> {
     return fs.readdirSync(this.folder).map((id: string) => this.get(parseInt(id)));
   }
@@ -588,6 +589,7 @@ class Database {
    * @param tablename The name of the table to get the entry from
    * @param id The id of the entry to get
    * @returns The entry with the given id if it exists, otherwise null
+   * @throws Error if the table does not exist
    */
   public static get(tablename: string, id: entryid): TEntry | null {
     const table = this.get_table(tablename);
@@ -598,6 +600,7 @@ class Database {
    * Create a new entry in the table with the given tablename
    * @param tablename The name of the table to create the entry in
    * @param data The entry data
+   * @throws Error if the table does not exist
    */
   public static post(tablename: string, data: TEntry): void {
     const table = this.get_table(tablename);
@@ -609,6 +612,7 @@ class Database {
    * @param tablename The name of the table to update the entry in
    * @param id The id of the entry to update
    * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
    */
   public static patch(tablename: string, id: entryid, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -619,33 +623,171 @@ class Database {
    * Delete the entry with the given id from the table with the given tablename
    * @param tablename The name of the table to delete the entry from
    * @param id The id of the entry to delete
+   * @throws Error if the table does not exist
    */
   public static delete(tablename: string, id: entryid): void {
     const table = this.get_table(tablename);
     table.delete(id);
   }
 
-  /// *** FILTER-QUERY METHODS *** ///
+  /// *** FILTER-QUERY GET METHODS *** ///
 
-  // TODO: add documentation and add all the methods from the Table class to this class
+  /**
+   * Get all entries from the table with the given tablename
+   * @param tablename The name of the table to get the entry from
+   * @returns All entries from the table with the given tablename
+   * @throws Error if the table does not exist
+   */
   public static get_all(tablename: string): Array<TEntry> {
     const table = this.get_table(tablename);
     return table.get_all();
   }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name equals the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name equals the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where(fieldname, value);
+  }
+  
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name does not equal the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name does not equal the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_not(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_not(fieldname, value);
+  }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name is greater than the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name is greater than the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_gt(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_gt(fieldname, value);
+  }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name is less than the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name is less than the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_lt(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_lt(fieldname, value);
+  }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name is greater than or equal to the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name is greater than or equal to the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_gte(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_gte(fieldname, value);
+  }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name is less than or equal to the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name is less than or equal to the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_lte(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_lte(fieldname, value);
+  }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name contains the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name contains the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_contains(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_contains(fieldname, value);
+  }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name does not contain the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name does not contain the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_not_contains(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_not_contains(fieldname, value);
+  }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name starts with the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name starts with the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_starts_with(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_starts_with(fieldname, value);
+  }
+
+  /**
+   * Get all entries from the table with the given tablename where the field with the given name ends with the given value
+   * @param tablename The name of the table to get the entry from
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @returns All entries from the table with the given tablename where the field with the given name ends with the given value
+   * @throws Error if the table does not exist
+   */
+  public static get_where_ends_with(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_where_ends_with(fieldname, value);
+  }
+
+  
 }
 
-const record: TEntry = {
-  hello: "tampoco",
-  world: "yo soy"
-};
+// const record: TEntry = {
+//   hello: "tampoco",
+//   world: "yo soy"
+// };
 
-Database.connect();
-const t = Database.get_table('test');
+// Database.connect();
+// const t = Database.get_table('test');
 
-console.log(t.get(1));
-console.log("-------------------------------------------------------------------");
-console.log(t.get(1));
-console.log("-------------------------------------------------------------------");
-console.log(t.get_all());
-console.log("-------------------------------------------------------------------");
-console.log(t.get_where("hello", "hola"));
+// console.log(t.get(1));
+// console.log("-------------------------------------------------------------------");
+// console.log(t.get(1));
+// console.log("-------------------------------------------------------------------");
+// console.log(t.get_all());
+// console.log("-------------------------------------------------------------------");
+// console.log(t.get_where("hello", "hola"));
