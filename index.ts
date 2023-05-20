@@ -1,6 +1,14 @@
 const fs = require('fs');
 
 /**
+ * Example of a database-entry record
+ */
+const record: TEntry = {
+  hello: "world",
+  lorem: "ipsum"
+};
+
+/**
  * The name of a field in an entry/table
  */
 type fieldname = string;
@@ -553,9 +561,10 @@ class Database {
   private static connected: boolean = false;
 
   /**
-   * Connect to the database and
-   * create the neccessary files if they do not exist and
-   * create existing tables from the table information in the file
+   * @note This method is required before calling any other methods
+   * Connect to the database,
+   * create the neccessary files if they do not exist, 
+   * and create existing tables from the table information in the file
    * @throws Error if the database is already connected
    */
   public static connect(): void {
@@ -577,8 +586,10 @@ class Database {
    * @param tablename The name of the table to get
    * @returns The table with the given tablename
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_table(tablename: string): Table {
+    if (!this.connected) throw new Error("Database not connected - use 'Database.connect()' to connect to the database");
     const table = this.tables.find((table: Table) => table.name == tablename);
     if (!table) throw new Error(`Table ${tablename} does not exist`);
     return table;
@@ -590,6 +601,7 @@ class Database {
    * @param id The id of the entry to get
    * @returns The entry with the given id if it exists, otherwise null
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get(tablename: string, id: entryid): TEntry | null {
     const table = this.get_table(tablename);
@@ -601,6 +613,7 @@ class Database {
    * @param tablename The name of the table to create the entry in
    * @param data The entry data
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static post(tablename: string, data: TEntry): void {
     const table = this.get_table(tablename);
@@ -613,6 +626,7 @@ class Database {
    * @param id The id of the entry to update
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch(tablename: string, id: entryid, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -624,6 +638,7 @@ class Database {
    * @param tablename The name of the table to delete the entry from
    * @param id The id of the entry to delete
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete(tablename: string, id: entryid): void {
     const table = this.get_table(tablename);
@@ -637,6 +652,7 @@ class Database {
    * @param tablename The name of the table to get the entry from
    * @returns All entries from the table with the given tablename
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_all(tablename: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -650,6 +666,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name equals the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -663,6 +680,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name does not equal the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_not(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -676,6 +694,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name is greater than the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_gt(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -689,6 +708,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name is less than the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_lt(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -702,6 +722,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name is greater than or equal to the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_gte(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -715,6 +736,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name is less than or equal to the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_lte(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -728,6 +750,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name contains the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_contains(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -741,6 +764,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name does not contain the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_not_contains(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -754,6 +778,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name starts with the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_starts_with(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -767,6 +792,7 @@ class Database {
    * @param value The value to compare the given field with
    * @returns All entries from the table with the given tablename where the field with the given name ends with the given value
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static get_where_ends_with(tablename: string, fieldname: fieldname, value: string): Array<TEntry> {
     const table = this.get_table(tablename);
@@ -781,6 +807,7 @@ class Database {
    * @param updated_fields The fields to update
    * @warning be careful using this method
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_all(tablename: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -794,6 +821,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -807,6 +835,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_not(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -820,6 +849,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_gt(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -833,6 +863,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_lt(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -846,6 +877,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_gte(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -859,6 +891,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_lte(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -872,6 +905,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_contains(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -885,6 +919,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_not_contains(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -898,6 +933,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_starts_with(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -911,6 +947,7 @@ class Database {
    * @param value The value to compare the given field with
    * @param updated_fields The fields to update
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static patch_where_ends_with(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
     const table = this.get_table(tablename);
@@ -924,6 +961,7 @@ class Database {
    * @param tablename The name of the table to delete the entries from
    * @warning be careful using this method 
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_all(tablename: string): void {
     const table = this.get_table(tablename);
@@ -936,6 +974,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -948,6 +987,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_not(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -960,6 +1000,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_gt(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -972,6 +1013,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_gte(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -984,6 +1026,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_lt(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -996,6 +1039,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_lte(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -1008,6 +1052,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_contains(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -1020,6 +1065,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_not_contains(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -1032,6 +1078,7 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_starts_with(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
@@ -1044,25 +1091,10 @@ class Database {
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
    */
   public static delete_where_ends_with(tablename: string, fieldname: fieldname, value: string): void {
     const table = this.get_table(tablename);
     table.delete_where_ends_with(fieldname, value);
   }
 }
-
-// const record: TEntry = {
-//   hello: "tampoco",
-//   world: "yo soy"
-// };
-
-// Database.connect();
-// const t = Database.get_table('test');
-
-// console.log(t.get(1));
-// console.log("-------------------------------------------------------------------");
-// console.log(t.get(1));
-// console.log("-------------------------------------------------------------------");
-// console.log(t.get_all());
-// console.log("-------------------------------------------------------------------");
-// console.log(t.get_where("hello", "hola"));
