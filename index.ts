@@ -773,6 +773,150 @@ class Database {
     return table.get_where_ends_with(fieldname, value);
   }
 
+  /// *** FILTER-QUERY PATCH METHODS *** ///
+
+  /**
+   * Update all entries from the table with the given tablename
+   * @param tablename The name of the table to update the entries in
+   * @param updated_fields The fields to update
+   * @warning be careful using this method
+   * @throws Error if the table does not exist
+   */
+  public static patch_all(tablename: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_all(updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name is equal to the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name is not equal to the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_not(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_not(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name is greater than the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_gt(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_gt(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name is less than the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_lt(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_lt(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name is greater than or equal to the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_gte(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_gte(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name is less than or equal to the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_lte(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_lte(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name contains the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_contains(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_contains(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name does not contain the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_not_contains(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_not_contains(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name starts with the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_starts_with(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_starts_with(fieldname, value, updated_fields);
+  }
+
+  /**
+   * Update all entries from the table with the given tablename where the field with the given name ends with the given value
+   * @param tablename The name of the table to update the entries in
+   * @param fieldname The name of the field to compare the given value with
+   * @param value The value to compare the given field with
+   * @param updated_fields The fields to update
+   * @throws Error if the table does not exist
+   */
+  public static patch_where_ends_with(tablename: string, fieldname: fieldname, value: string, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_where_ends_with(fieldname, value, updated_fields);
+  }
+
   
 }
 
