@@ -35,18 +35,24 @@ type TEntry = Record<fieldname, fieldvalue>;
 type TEntriesFilter = (entry: TEntry) => boolean;
 
 /**
+ * Custom function for parsing table entries, as all fields are by default unparsed strings and might need to be converted to numbers, booleans, dates, a class instance, etc.
+ * This function can also be used to convert a TEntry record (which is a Record<fieldname, fieldvalue>) to a custom type (e.g. a class instance)
+ */
+type TParseEntryFieldsFunction = (entry: TEntry) => TEntry;
+
+/**
  * Raw JSON table type
  */
-interface ITable {
-  name: string;
-  folder: string;
-  fieldnames: Array<fieldname>;
+type TRawTable = {
+  readonly name: string;
+  readonly folder: string;
+  readonly fieldnames: Array<fieldname>;
 }
 
 /**
  * Database Table
  */
-class Table implements ITable {
+class Table {
   /**
    * The separator used to separate fields in an entry
    */
@@ -55,26 +61,41 @@ class Table implements ITable {
   /**
    * The name of the table
    */
-  name: string;
+  public readonly name: string;
 
   /**
    * The path to the folder where the table's entries are stored
    */
-  folder: string;
+  private readonly folder: string;
 
   /**
    * The names of the fields in the table / in the table's entries
    */
-  fieldnames: Array<fieldname>;
+  private readonly fieldnames: Array<fieldname>;
+
+  /**
+   * Function for parsing table entries, as all fields are by default unparsed strings and might need to be converted to numbers, booleans, dates, a class instance, etc.
+   */
+  private parseFunction: TParseEntryFieldsFunction;
 
   /**
    * Create a table from a raw json table stored in the table.info file
    * @param raw_table The raw json table from the table.info file
    */
-  constructor(raw_table: ITable) {
+  constructor(raw_table: TRawTable) {
     this.name = raw_table.name;
     this.folder = `./database/${raw_table.name}/`;
     this.fieldnames = raw_table.fieldnames;
+    // by default, the parseFunction will return the entry without parsing it
+    this.parseFunction = (entry: TEntry): TEntry => entry;
+  }
+
+  /**
+   * Change the parse function used to parse table entries
+   * @param parseFunction The function to use for parsing table entries, as all fields are by default unparsed strings and might need to be converted to numbers, booleans, dates, a class instance, etc.
+   */
+  public set_parse_function(parseFunction: TParseEntryFieldsFunction): void {
+    this.parseFunction = parseFunction;
   }
 
   /**
@@ -138,7 +159,7 @@ class Table implements ITable {
       record[this.fieldnames[i]] = entries[i];
     }
 
-    return record;
+    return record ? this.parseFunction(record) : null;
   }
 
   /**
@@ -149,7 +170,7 @@ class Table implements ITable {
   public post(data: TEntry): TEntry {
     const id = this.get_next_id();
     this.write_to_file(id, data);
-    return data;
+    return this.parseFunction(data);
   }
   
   /**
@@ -186,7 +207,7 @@ class Table implements ITable {
    * @returns Every entry in the table
    */
   public get_all(): Array<TEntry> {
-    return fs.readdirSync(this.folder).map((id: string) => this.get(parseInt(id)));
+    return fs.readdirSync(this.folder).map((id: string) => this.parseFunction(this.get(parseInt(id))!));
   }
 
   /**
