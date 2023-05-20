@@ -73,15 +73,12 @@ int main() {
   
   std::string tables_info_file = database_filepath + "table.info";
   std::ofstream f;
+  
   if (std::filesystem::exists(tables_info_file))
-  {
     f.open(tables_info_file, std::ios::app);
-    f << json_stringify(table_name, table_path, fieldnames) << std::endl;
-  }
   else
-  {
     f.open(tables_info_file, std::ios::out);
-    f << json_stringify(table_name, table_path, fieldnames) << std::endl;
-  }
+  
+  f << json_stringify(table_name, table_path, fieldnames) << std::endl;
   f.close();
 }
