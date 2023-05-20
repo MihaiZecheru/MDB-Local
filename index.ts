@@ -30,6 +30,11 @@ type entryid = number;
 type TEntry = Record<fieldname, fieldvalue>;
 
 /**
+ * Custom filter function type for applying to table entries
+ */
+type TEntriesFilter = (entry: TEntry) => boolean;
+
+/**
  * Raw JSON table type
  */
 interface ITable {
@@ -185,6 +190,15 @@ class Table implements ITable {
   }
 
   /**
+   * Get all entries that pass the given filter
+   * @param filter The filter to apply to each of the entries
+   * @returns All entries that pass the given filter
+   */
+  public get_with_filter(filter: TEntriesFilter): Array<TEntry> {
+    return this.get_all().filter(filter);
+  }
+
+  /**
    * Get all entries where the field with the given name is equal to the given value
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
@@ -293,6 +307,18 @@ class Table implements ITable {
    */
   public patch_all(updated_fields: TEntry): void {
     this.get_all_ids().map((id: entryid) => this.patch(id, updated_fields));
+  }
+
+  /**
+   * Update all entries that pass the given filter
+   * @param filter The filter to apply to each of the entries
+   */
+  public patch_with_filter(filter: TEntriesFilter, updated_fields: TEntry): void {
+    const entries_with_ids: Array<TEntry> = this.get_all().map((entry: TEntry, index: number) => {
+      entry['id'] = index.toString();
+      return entry;
+    });
+    entries_with_ids.filter(filter).map((entry: TEntry) => this.patch(parseInt(entry.id), updated_fields));
   }
 
   /**
@@ -423,6 +449,18 @@ class Table implements ITable {
    */
   public delete_all(): void {
     this.get_all_ids().forEach((id: entryid) => this.delete(id));
+  }
+
+  /**
+   * Delete all entries that pass the given filter
+   * @param filter The filter to apply to each of the entries
+   */
+  public delete_with_filter(filter: TEntriesFilter): void {
+    const entries_with_ids: Array<TEntry> = this.get_all().map((entry: TEntry, index: number) => {
+      entry['id'] = index.toString();
+      return entry;
+    });
+    entries_with_ids.filter(filter).map((entry: TEntry) => this.delete(parseInt(entry.id)));
   }
 
   /**
@@ -660,6 +698,19 @@ class Database {
   }
 
   /**
+   * Get all entries from the table with the given tablename that pass the given filter
+   * @param tablename The name of the table to get the entry from 
+   * @param filter The filter to apply to the entries
+   * @returns The entries that pass the given filter
+   * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
+   */
+  public static get_with_filter(tablename: string, filter: TEntriesFilter): Array<TEntry> {
+    const table = this.get_table(tablename);
+    return table.get_with_filter(filter);
+  }
+
+  /**
    * Get all entries from the table with the given tablename where the field with the given name equals the given value
    * @param tablename The name of the table to get the entry from
    * @param fieldname The name of the field to compare the given value with
@@ -815,6 +866,19 @@ class Database {
   }
 
   /**
+   * Update all entries from the table with the given tablename that pass the filter
+   * @param tablename The name of the table to update the entries in
+   * @param filter The filter to apply to the entries
+   * @param updated_fields The updated fields to apply to the entries
+   * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
+   */
+  public static patch_with_filter(tablename: string, filter: TEntriesFilter, updated_fields: TEntry): void {
+    const table = this.get_table(tablename);
+    table.patch_with_filter(filter, updated_fields);
+  }
+
+  /**
    * Update all entries from the table with the given tablename where the field with the given name is equal to the given value
    * @param tablename The name of the table to update the entries in
    * @param fieldname The name of the field to compare the given value with
@@ -966,6 +1030,16 @@ class Database {
   public static delete_all(tablename: string): void {
     const table = this.get_table(tablename);
     table.delete_all();
+  }
+
+  /**
+   * Delete all entries from the table with the given tablename that pass the given filter
+   * @param tablename The name of the table to delete the entries from
+   * @param filter The filter to apply to the table
+   */
+  public static delete_with_filter(tablename: string, filter: TEntriesFilter): void {
+    const table = this.get_table(tablename);
+    table.delete_with_filter(filter);
   }
 
   /**
