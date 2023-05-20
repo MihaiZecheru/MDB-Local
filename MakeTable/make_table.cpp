@@ -71,21 +71,20 @@ std::string json_stringify(std::string name, std::string table_folder_path, std:
   return "{\"name\":\"" + name + "\",\"folder\":\"" + table_folder_path + "\",\"fieldnames\":[" + formatted_fieldnames + "]}";
 }
 
-int main() {
-  std::string database_filepath;
-  if (std::filesystem::exists("./make_table.cpp"))
-  {
-    // Current dir is inside the folder with the program, so the previous dir level needs to be accessed
-    database_filepath = "../database/";
-  }
-  else
-  {
-    // Current dir is the outer folder
-    database_filepath = "./database/";
-  }
+std::string get_database_filepath()
+{
+  // If the current dir is inside the folder with the program, the previous dir level needs to be accessed
+  if (std::filesystem::exists("./make_table.cpp")) return "../database/";
+  
+  // Current dir is the outer folder
+  return "./database/";
+}
 
+int main() {
+  std::string database_filepath = get_database_filepath();
   std::string table_name = get_table_name();
   std::string table_path = database_filepath + table_name;
+
   assert_database_folder_exists(database_filepath);
   std::filesystem::create_directory(table_path);
   std::vector<std::string> fieldnames = get_fields();
