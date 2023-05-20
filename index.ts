@@ -1,9 +1,9 @@
 const fs = require('fs');
 
 /**
- * Example of a database-entry record
+ * Example of a database-entry record. Note the TEntry type is a Record<fieldname, fieldvalue>
  */
-const record: TEntry = {
+const __record__: TEntry = {
   hello: "world",
   lorem: "ipsum"
 };
@@ -11,34 +11,34 @@ const record: TEntry = {
 /**
  * The name of a field in an entry/table
  */
-type fieldname = string;
+export type fieldname = string;
 
 /**
  * The value of a field in an entry/table - a string that may represent numbers, booleans, etc.
- * The user parses the values himself based on what he knows has been stored in that field
+ * The value is parsed when using a function from the Table class, which will call the user-defined parseFunction to parse the field values
  */
-type fieldvalue = string;
+export type fieldvalue = string;
 
 /**
  * The id of a table entry
  */
-type entryid = number;
+export type entryid = number;
 
 /**
  * Table entry type
  */
-type TEntry = Record<fieldname, fieldvalue>;
+export type TEntry = Record<fieldname, fieldvalue>;
 
 /**
  * Custom filter function type for applying to table entries
  */
-type TEntriesFilter = (entry: TEntry) => boolean;
+export type TEntriesFilter = (entry: TEntry) => boolean;
 
 /**
  * Custom function for parsing table entries, as all fields are by default unparsed strings and might need to be converted to numbers, booleans, dates, a class instance, etc.
  * This function can also be used to convert a TEntry record (which is a Record<fieldname, fieldvalue>) to a custom type (e.g. a class instance)
  */
-type TParseEntryFieldsFunction = (entry: TEntry) => TEntry;
+export type TParseEntryFieldsFunction = (entry: TEntry) => TEntry;
 
 /**
  * Raw JSON table type
@@ -52,7 +52,7 @@ type TRawTable = {
 /**
  * Database Table
  */
-class Table {
+export class Table {
   /**
    * The separator used to separate fields in an entry
    */
@@ -80,6 +80,7 @@ class Table {
 
   /**
    * Create a table from a raw json table stored in the table.info file
+   * @important This constructor is not meant to be used directly, all tables are instantiated when the Database.connect() method is called
    * @param raw_table The raw json table from the table.info file
    */
   constructor(raw_table: TRawTable) {
@@ -185,7 +186,7 @@ class Table {
     const updated_data = { ...current_data, ...updated_fields };
     if (!fs.existsSync(this.entry_path(id))) throw new Error(`Entry with id '${id}' does not exist`);
     this.write_to_file(id, updated_data);
-    return updated_data;
+    return this.parseFunction(updated_data);
   }
 
   /**
@@ -195,9 +196,9 @@ class Table {
    */
   public delete(id: entryid): TEntry {
     const entry: TEntry = this.get(id)!;
-    if (!entry) throw new Error(`Entry with id ${id} does not exist`);
+    if (!entry) throw new Error(`Entry with id '${id}' does not exist`);
     fs.unlinkSync(this.entry_path(id));
-    return entry;
+    return this.parseFunction(entry);
   }
 
   // *** FILTER-QUERY GET METHODS *** ///
@@ -212,6 +213,7 @@ class Table {
 
   /**
    * Get all entries that pass the given filter
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param filter The filter to apply to each of the entries
    * @returns All entries that pass the given filter
    */
@@ -221,6 +223,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name is equal to the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name is equal to the given value
@@ -231,6 +234,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name is not equal to the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name is not equal to the given value
@@ -241,6 +245,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name is greater than the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name is greater than the given value
@@ -251,6 +256,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name is less than the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name is less than the given value
@@ -261,6 +267,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name is greater than or equal to the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name is greater than or equal to the given value
@@ -271,6 +278,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name is less than or equal to the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name is less than or equal to the given value
@@ -281,6 +289,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name contains the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name contains the given value
@@ -291,6 +300,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name does not contain the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name does not contain the given value
@@ -301,6 +311,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name starts with the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name starts with the given value
@@ -311,6 +322,7 @@ class Table {
 
   /**
    * Get all entries where the field with the given name ends with the given value
+   * @important The filter is applied after the parseFunction has been applied to each of the entries 
    * @param fieldname The name of the field to compare the given value with
    * @param value The value to compare the given field with
    * @returns All entries where the field with the given name ends with the given value
@@ -598,7 +610,7 @@ class Table {
 /**
  * Static Database class for interacting with the MDBL database
  */
-class Database {
+export default class Database {
   /**
    * The path to the database root folder
    */
