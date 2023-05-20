@@ -1,6 +1,5 @@
-#include <iostream>
+#include "shared.hpp"
 #include <algorithm>
-#include <filesystem>
 #include <fstream>
 #include <vector>
 
@@ -48,14 +47,6 @@ std::string get_table_name()
   return table_name;
 }
 
-void assert_database_folder_exists(std::string database_filepath)
-{
-  if (!std::filesystem::exists(database_filepath))
-  {
-    std::filesystem::create_directory(database_filepath);
-  }
-}
-
 std::string json_stringify(std::string name, std::string table_folder_path, std::vector<std::string> fieldnames)
 {
   std::string formatted_fieldnames = "";
@@ -69,15 +60,6 @@ std::string json_stringify(std::string name, std::string table_folder_path, std:
   }
 
   return "{\"name\":\"" + name + "\",\"folder\":\"" + table_folder_path + "\",\"fieldnames\":[" + formatted_fieldnames + "]}";
-}
-
-std::string get_database_filepath()
-{
-  // If the current dir is inside the folder with the program, the previous dir level needs to be accessed
-  if (std::filesystem::exists("./make_table.cpp")) return "../database/";
-  
-  // Current dir is the outer folder
-  return "./database/";
 }
 
 int main() {
