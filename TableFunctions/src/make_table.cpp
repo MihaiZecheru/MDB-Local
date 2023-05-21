@@ -85,6 +85,9 @@ int main() {
   else
     f.open(tables_info_file, std::ios::out);
   
-  f << json_stringify(table_name, table_path, fieldnames) << std::endl;
+  // substr for removing one dir level; from '../database/' to './database/'
+  f << json_stringify(table_name, table_path.substr(1), fieldnames) << std::endl;
   f.close();
+
+  std::cout << "Table created successfully" << std::endl;
 }
