@@ -5,7 +5,7 @@
 
 std::vector<std::string> get_fields()
 {
-  std::cout << "Enter ':q' to quit" << std::endl;
+  std::cout << "Enter ':q' to quit or ':d' to finish adding fields" << std::endl;
   
   std::vector<std::string> fields;
   while (true)
@@ -15,7 +15,8 @@ std::vector<std::string> get_fields()
     std::cin >> field_name;
     std::cout << std::endl;
 
-    if (field_name == ":q") break;
+    if (field_name == ":q") exit(0);
+    if (field_name == ":d") break;
 
     // Check if field_name is not alphanumeric
     if (any_of(field_name.begin(), field_name.end(), [](const char& c) -> bool { return c != '_' && !isalnum(c); }))
@@ -66,11 +67,16 @@ int main() {
   std::string database_filepath = get_database_filepath();
   std::string table_name = get_table_name();
   std::string table_path = database_filepath + table_name;
-
   assert_database_folder_exists(database_filepath);
-  std::filesystem::create_directory(table_path);
   std::vector<std::string> fieldnames = get_fields();
   
+  if (fieldnames.size() == 0)
+  {
+    std::cout << "Table must have at least one field" << std::endl;
+    exit(1);
+  }
+  
+  std::filesystem::create_directory(table_path);
   std::string tables_info_file = database_filepath + "table.info";
   std::ofstream f;
   
