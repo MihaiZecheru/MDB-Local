@@ -13,6 +13,8 @@ all entries returned from any of the API calls.
 To use MDB Local, copy the `index.ts` file and the `TableFunctions` folder to your project.
 
 Setup your tables using the executables in the `TableFunctions` folder then import the `index.ts` file and connect the database:
+
+TS/JS
 ```
 import Database from "./mdb_local/index";
 Database.connect();
