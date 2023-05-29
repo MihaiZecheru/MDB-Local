@@ -30,6 +30,11 @@ export type entryid = number;
 export type TEntry = Record<fieldname, fieldvalue>;
 
 /**
+ * Parsed table entry type
+ */
+export type TParsedEntry = Record<fieldname, any>;
+
+/**
  * Custom filter function type for applying to table entries
  */
 export type TEntriesFilter = (entry: TEntry) => boolean;
@@ -38,7 +43,7 @@ export type TEntriesFilter = (entry: TEntry) => boolean;
  * Custom function for parsing table entries, as all fields are by default unparsed strings and might need to be converted to numbers, booleans, dates, a class instance, etc.
  * This function can also be used to convert a TEntry record (which is a Record<fieldname, fieldvalue>) to a custom type (e.g. a class instance)
  */
-export type TParseEntryFieldsFunction = (entry: TEntry) => TEntry;
+export type TParseEntryFieldsFunction = (entry: TEntry) => TParsedEntry;
 
 /**
  * Raw JSON table type
@@ -96,7 +101,8 @@ export class Table {
    * @param parseFunction The function to use for parsing table entries, as all fields are by default unparsed strings and might need to be converted to numbers, booleans, dates, a class instance, etc.
    */
   public set_parse_function(parseFunction: TParseEntryFieldsFunction): void {
-    this.parseFunction = parseFunction;
+    // The method is called from the Database class in order to update the table in the Database's memory, not just on this object
+    Database.set_table_parse_function(this.name, parseFunction);
   }
 
   /**
@@ -614,12 +620,12 @@ export default class Database {
   /**
    * The path to the database root folder
    */
-  private static database_folder: string = "./database/";
+  private static readonly database_folder: string = "./database/";
   
   /**
    * The path to the table.info file
    */
-  private static tables_info_file: string = this.database_folder + "table.info";
+  private static readonly tables_info_file: string = this.database_folder + "table.info";
   
   /**
    * The tables in the database
@@ -664,6 +670,20 @@ export default class Database {
     const table = this.tables.find((table: Table) => table.name == tablename);
     if (!table) throw new Error(`Table ${tablename} does not exist`);
     return table;
+  }
+
+  /**
+   * Set the parse function for the table with the given tablename
+   * @param tablename The name of the table to set the parse function for
+   * @param parseFunction The function to use to parse the entry fields
+   * @throws Error if the table does not exist
+   * @throws Error if the database is not connected
+   */
+  public static set_table_parse_function(tablename: string, parseFunction: TParseEntryFieldsFunction): void {
+    for (let i = 0; i < this.tables.length; i++) {
+      if (this.tables[i].name != tablename) continue;
+      return this.tables[i].set_parse_function(parseFunction);
+    }
   }
 
   /**
