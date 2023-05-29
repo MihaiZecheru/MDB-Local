@@ -10,10 +10,10 @@ all entries returned from any of the API calls:
 
 TypeScript
 ```ts
-import Database, { Entry } from "./mdb_local/index";
+import Database, { TEntry } from "./mdb_local/index";
 
 const table: Table = Database.get_table("Users");
-table.set_parse_function((entry: Entry) => {
+table.set_parse_function((entry: TEntry) => {
   entry.age = parseInt(entry.age);
   entry.created_on = new Date(entry.created_on);
   return entry;
