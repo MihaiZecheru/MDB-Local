@@ -8,7 +8,7 @@ The database tables' fields are type-less, meaning you can store whatever value 
 To parse entries, you can use the `table.set_parse_function` function to define the function used to automatically parse
 all entries returned from any of the API calls:
 
-TS:
+TypeScript
 ```ts
 import Database, { Entry } from "./mdb_local/index";
 
@@ -20,8 +20,8 @@ table.set_parse_function((entry: Entry) => {
 });
 ```
 
-JS:
-```
+JavaScript:
+```js
 import Database from "./mdb_local/index";
 
 const table = Database.get_table("Users");
@@ -40,8 +40,8 @@ To use MDB Local, copy the `index.ts` file and the `TableFunctions` folder to yo
 
 Setup your tables using the executables in the `TableFunctions` folder then import the `index.ts` file and connect the database:
 
-TS/JS
-```
+TypeScript/JavaScript
+```js
 import Database from "./mdb_local/index";
 Database.connect();
 ```
