@@ -30,6 +30,11 @@ export type entryid = number;
 export type TEntry = Record<fieldname, fieldvalue>;
 
 /**
+ * Parsed table entry type
+ */
+export type TParsedEntry = Record<fieldname, any>;
+
+/**
  * Custom filter function type for applying to table entries
  */
 export type TEntriesFilter = (entry: TEntry) => boolean;
@@ -38,7 +43,7 @@ export type TEntriesFilter = (entry: TEntry) => boolean;
  * Custom function for parsing table entries, as all fields are by default unparsed strings and might need to be converted to numbers, booleans, dates, a class instance, etc.
  * This function can also be used to convert a TEntry record (which is a Record<fieldname, fieldvalue>) to a custom type (e.g. a class instance)
  */
-export type TParseEntryFieldsFunction = (entry: TEntry) => TEntry;
+export type TParseEntryFieldsFunction = (entry: TEntry) => TParsedEntry;
 
 /**
  * Raw JSON table type
