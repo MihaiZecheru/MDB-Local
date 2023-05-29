@@ -9,7 +9,7 @@ To parse entries, you can use the `table.set_parse_function` function to define 
 all entries returned from any of the API calls:
 
 TS:
-```
+```ts
 import Database, { Entry } from "./mdb_local/index";
 
 const table: Table = Database.get_table("Users");
