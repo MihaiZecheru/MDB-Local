@@ -30,7 +30,7 @@ export type entryid = number;
 export type TEntry = Record<fieldname, fieldvalue>;
 
 /**
- * Custom filter function type for applying to table entries
+ * Custom filter function type for applying to table entries using the Table.get_with_filter() method
  */
 export type TEntriesFilter = (entry: TEntry) => boolean;
 
@@ -105,10 +105,10 @@ export class Table {
   /**
    * Change the parse function used to parse table entries
    * @param parseFunction The function to use for parsing table entries, as all fields are by default unparsed strings and might need to be converted to numbers, booleans, dates, a class instance, etc.
+   * @note This will only affect the table object, not the table in the Database's memory. To update the table in the Database's memory, use the Database.set_parse_function() method
    */
   public set_parse_function(parseFunction: TParseEntryFieldsFunction): void {
-    // The method is called from the Database class in order to update the table in the Database's memory, not just on this object
-    Database.set_table_parse_function(this.name, parseFunction);
+    this.parseFunction = parseFunction;
   }
 
   /**
