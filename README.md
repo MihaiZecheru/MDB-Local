@@ -10,7 +10,7 @@ all entries returned from any of the API calls:
 
 TypeScript
 ```ts
-import Database, { TEntry } from "./mdb_local/index";
+import Database, { Table, TEntry } from "./mdb_local/index";
 
 const table: Table = Database.get_table("Users");
 table.set_parse_function((entry: TEntry) => {
@@ -29,6 +29,19 @@ table.set_parse_function((entry) => {
   entry.age = parseInt(entry.age);
   entry.created_on = new Date(entry.created_on);
   return entry;
+});
+```
+
+Alternatively, entries can be parsed by returning a new object:
+```ts
+import Database, { Table, TEntry } from "./mdb_local/index";
+
+const table: Table = Database.get_table("Users");
+table.set_parse_function((entry: TEntry) => {
+  return {
+    age: parseInt(entry.age),
+    created_on: new Date(entry.created_on)
+  };
 });
 ```
 
